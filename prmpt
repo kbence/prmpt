@@ -1,0 +1,139 @@
+#!/bin/bash
+
+__PRMPT_ITEMS='user host cwd'
+__PRMPT_STYLE='simple'
+
+__PRMPT_OPT_color=true
+__PRMPT_OPT_color_user=green
+__PRMPT_OPT_color_host=green
+__PRMPT_OPT_color_cwd=blue
+__PRMPT_OPT_bold=true
+__PRMPT_OPT_bold_end=false
+
+__PRMPT_OPT_end='$'
+
+function prmpt() {
+  local cmd="$1"; shift
+
+  case "$cmd" in
+    set) __prmpt_command_set "$@" ;;
+    '') PROMPT_COMMAND='__prmpt_entry' ;;
+  esac
+}
+
+function __prmpt_entry() {
+  local item
+  local value
+
+  __prmpt_reset
+  __PRMPT_VAR_last_item=''
+
+  for item in $__PRMPT_ITEMS; do
+    value="$(__prmpt_item "$item")"
+    __prmpt_append "$(__prmpt_style "$item" "$value")"
+    __PRMPT_VAR_last_item="$item"
+  done
+
+  __prmpt_append "$(__prmpt_style end "$__PRMPT_OPT_end")"
+  unset __PRMPT_VAR_last_item
+}
+
+function __prmpt_reset() {
+  PS1=''
+}
+
+function __prmpt_append() {
+  PS1="$PS1""$@"
+}
+
+function __prmpt_item() {
+  case "$1" in
+    user) echo '\u' ;;
+    host) echo '\h' ;;
+    cwd)  echo '\w' ;;
+  esac
+}
+
+function __prmpt_style() {
+  "__prmpt_style_${__PRMPT_STYLE}" "$@"
+}
+
+function __prmpt_style_simple() {
+  local item="$1"
+  local value="$2"
+  local prefix=''
+  local suffix=''
+
+  case "$__PRMPT_VAR_last_item>$item" in
+    'user>host') prefix='@'; suffix='' ;;
+    'host>user') prefix='/'; suffix='' ;;
+    'host>cwd' ) prefix=':'; suffix='' ;;
+    *'>end'    ) prefix=' '; suffix=' ' ;;
+  esac
+
+  echo "$(__prmpt_color fg "$item")${prefix}${value}${suffix}$(__prmpt_color_reset)"
+}
+
+function __prmpt_style_bracket() {
+  local item="$1"
+  local value="$2"
+
+  if [[ $item == end ]]; then
+    echo " $(__prmpt_color fg "$item")$2$(__prmpt_color_reset) "
+  else
+    echo "[$(__prmpt_color fg "$item")$2$(__prmpt_color_reset)]"
+  fi
+}
+
+function __prmpt_color() {
+  local type="$1"
+  local item="$2"
+  local var_name="__PRMPT_OPT_color_$item"
+
+  __prmpt_bold "$item"
+  "__prmpt_color_$type" "${!var_name}"
+}
+
+function __prmpt_bold() {
+  local bold="$__PRMPT_OPT_bold"
+  local var_name="__PRMPT_OPT_bold_${1}"
+
+  if $__PRMPT_OPT_bold; then
+    if [[ -n ${!var_name} ]]; then
+      bold="${!var_name}"
+    fi
+  fi
+
+  if $bold; then
+    tput bold
+  fi
+}
+
+function __prmpt_color_fg() {
+  tput setaf "$(__prmpt_color_code "$1")"
+}
+
+function __prmpt_color_bg() {
+  tput setb "$(__prmpt_color_code "$1")"
+}
+
+function __prmpt_color_reset() {
+  tput sgr0
+}
+
+function __prmpt_color_code() {
+  case "$1" in
+    black  ) echo 0 ;;
+    red    ) echo 1 ;;
+    green  ) echo 2 ;;
+    cyan   ) echo 3 ;;
+    blue   ) echo 4 ;;
+    magenta) echo 5 ;;
+    yellow ) echo 6 ;;
+    white|*) echo 7 ;;
+  esac
+}
+
+function __prmpt_command_set() {
+  return 0
+}
