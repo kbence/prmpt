@@ -1,7 +1,6 @@
 #!/bin/bash
 
 __PRMPT_ITEMS="${__PRMPT_ITEMS:-userhost cwd}"
-__PRMPT_STYLE="${__PRMPT_STYLE:-simple}"
 
 __PRMPT_OPT_color="${__PRMPT_OPT_color:-true}"
 __PRMPT_OPT_color_user="${__PRMPT_OPT_color_user:-green}"
@@ -9,6 +8,7 @@ __PRMPT_OPT_color_host="${__PRMPT_OPT_color_host:-green}"
 __PRMPT_OPT_color_userhost="${__PRMPT_OPT_color_userhost:-green}"
 __PRMPT_OPT_color_cwd="${__PRMPT_OPT_color_cwd:-blue}"
 __PRMPT_OPT_color_end="${__PRMPT_OPT_color_cwd:-green}"
+__PRMPT_OPT_style="${__PRMPT_OPT_style:-simple}"
 __PRMPT_OPT_powerline="${__PRMPT_OPT_powerline:-true}"
 
 __PRMPT_OPT_end=${__PRMPT_OPT_end:-'$'}
@@ -57,7 +57,7 @@ function __prmpt_item() {
 }
 
 function __prmpt_style() {
-  "__prmpt_style_${__PRMPT_STYLE}" "$@"
+  "__prmpt_style_${__PRMPT_OPT_style}" "$@"
 }
 
 function __prmpt_style_simple() {
