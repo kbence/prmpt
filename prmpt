@@ -8,6 +8,7 @@ __PRMPT_OPT_color_user="${__PRMPT_OPT_color_user:-green}"
 __PRMPT_OPT_color_host="${__PRMPT_OPT_color_host:-green}"
 __PRMPT_OPT_color_userhost="${__PRMPT_OPT_color_userhost:-green}"
 __PRMPT_OPT_color_cwd="${__PRMPT_OPT_color_cwd:-blue}"
+__PRMPT_OPT_color_end="${__PRMPT_OPT_color_cwd:-green}"
 __PRMPT_OPT_powerline="${__PRMPT_OPT_powerline:-true}"
 
 __PRMPT_OPT_end=${__PRMPT_OPT_end:-'$'}
@@ -48,10 +49,10 @@ function __prmpt_append() {
 
 function __prmpt_item() {
   case "$1" in
-    user    ) echo '\u' ;;
-    host    ) echo '\h' ;;
-    userhost) echo '\u@\h' ;;
-    cwd     ) echo '\w' ;;
+    user    ) echo -n '\u' ;;
+    host    ) echo -n '\h' ;;
+    userhost) echo -n '\u@\h' ;;
+    cwd     ) echo -n '\w' ;;
   esac
 }
 
@@ -73,8 +74,8 @@ function __prmpt_style_simple() {
     *'>end'        ) prefix=' '; suffix=' ' ;;
   esac
 
-  echo -n "$(__prmpt_color fg $(__prmpt_color_item "$item") +bold commit)"
-  echo -n "${prefix}${value}${suffix}$(__prmpt_color reset commit)"
+  echo -n "${prefix}$(__prmpt_color fg $(__prmpt_color_item "$item") +bold commit)"
+  echo -n "${value}$(__prmpt_color reset commit)${suffix}"
 }
 
 function __prmpt_style_bracket() {
@@ -171,6 +172,13 @@ function __prmpt_color() {
   done
 }
 
+function __prmpt_command_set() {
+  while [[ $# -gt 0 ]]; do
+    __prmpt_setopt __PRMPT_OPT "$1"
+    shift
+  done
+}
+
 function __prmpt_setopt() {
   local prefix="$1"
   local def="$2"
@@ -181,8 +189,8 @@ function __prmpt_setopt() {
     var_name="${def:1}"
     [[ ${def:0:1} == '+' ]] && var_value=true || var_value=false
   else
-    var_name="$(echo "$def" | sed -e 's/([a-zA-Z0-9_-]+)=.*/$1/' | tr - _)"
-    var_value="$(echo "$def" | sed -e 's/[^=]+=(.*))/$1/')"
+    var_name="$(echo "$def" | sed -e 's/\([a-zA-Z0-9_-]\+\)=.*/\1/p; d' | tr - _)"
+    var_value="$(echo "$def" | sed -e 's/[^=]\+=\(.*\)/\1/')"
   fi
 
   eval "${prefix}_${var_name}='$var_value'"
@@ -193,14 +201,10 @@ function __prmpt_color_code() {
     black  ) echo ;;
     red    ) echo 1 ;;
     green  ) echo 2 ;;
-    cyan   ) echo 3 ;;
+    yellow ) echo 3 ;;
     blue   ) echo 4 ;;
     magenta) echo 5 ;;
     yellow ) echo 6 ;;
     white|*) echo 7 ;;
   esac
-}
-
-function __prmpt_command_set() {
-  return 0
 }
