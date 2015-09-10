@@ -1,6 +1,6 @@
 #!/bin/bash
 
-__PRMPT_ITEMS="${__PRMPT_ITEMS:-userhost cwd}"
+__PRMPT_ITEMS="${__PRMPT_ITEMS:-userhost cwd vcs}"
 
 __PRMPT_OPT_color="${__PRMPT_OPT_color:-true}"
 __PRMPT_OPT_color_user="${__PRMPT_OPT_color_user:-green}"
@@ -24,15 +24,27 @@ function prmpt() {
 
 function __prmpt_entry() {
   local item
-  local value
+  local text
+  local color
 
   __prmpt_reset
   __PRMPT_VAR_last_item=''
+  __PRMPT_VAR_last_color=''
 
   for item in $__PRMPT_ITEMS; do
-    value="$(__prmpt_item "$item")"
-    __prmpt_append "$(__prmpt_style "$item" "$value")"
-    __PRMPT_VAR_last_item="$item"
+    text=
+    color=
+    eval "$(__prmpt_item "$item")"
+
+    if [[ -z $color ]]; then
+      color="$(__prmpt_color_item "$item")"
+    fi
+
+    if [[ -n $text ]]; then
+      __prmpt_append "$(__prmpt_style "$item" "$text" "$color")"
+      __PRMPT_VAR_last_item="$item"
+      __PRMPT_VAR_last_color="$color"
+    fi
   done
 
   __prmpt_append "$(__prmpt_style end "$__PRMPT_OPT_end")"
@@ -49,11 +61,54 @@ function __prmpt_append() {
 
 function __prmpt_item() {
   case "$1" in
-    user    ) echo -n '\u' ;;
-    host    ) echo -n '\h' ;;
-    userhost) echo -n '\u@\h' ;;
-    cwd     ) echo -n '\w' ;;
+    user    ) echo -n "text='\u'" ;;
+    host    ) echo -n "text='\h'" ;;
+    userhost) echo -n "text='\u@\h'" ;;
+    cwd     ) echo -n "text='\w'" ;;
+    vcs     ) __prmpt_vcs_status_valid && echo "$(__prmpt_vcs_status)" ;;
   esac
+}
+
+function __prmpt_vcs_status_valid() {
+  __prmpt_vcs_is_git_directory && return 0
+  return 1
+}
+
+function __prmpt_vcs_status() {
+  if __prmpt_vcs_is_git_directory; then
+    echo $(__prmpt_vcs_git status)
+  fi
+}
+
+function __prmpt_vcs_is_git_directory() {
+  local dir="$1"
+
+  dir="$(cd "$dir"; pwd)"
+
+  if [[ -d "$dir/.git" ]]; then
+    return 0
+  fi
+
+  if [[ $dir != / ]]; then
+    __prmpt_vcs_is_git_directory "$(dirname "$dir")"
+    return $?
+  fi
+
+  return 1
+}
+
+function __prmpt_vcs_git() {
+  local type="$1"
+
+  case "$type" in
+    status) echo "text='$(git rev-parse --abbrev-ref HEAD)'" ;;
+  esac
+
+  if [[ $(git status --porcelain | wc -l) -gt 0 ]]; then
+    echo 'color=red'
+  else
+    echo 'color=green'
+  fi
 }
 
 function __prmpt_style() {
@@ -63,44 +118,48 @@ function __prmpt_style() {
 function __prmpt_style_simple() {
   local item="$1"
   local value="$2"
+  local color="$3"
   local prefix=''
   local suffix=''
 
   case "$__PRMPT_VAR_last_item>$item" in
-    'user>host'    ) prefix='@'; suffix='' ;;
-    'host>user'    ) prefix='/'; suffix='' ;;
-    'host>cwd'     ) prefix=':'; suffix='' ;;
-    'userhost>cwd' ) prefix=':'; suffix='' ;;
+    'user>host'    ) prefix='@' ;;
+    'host>user'    ) prefix='/' ;;
+    'host>cwd'     ) prefix=':' ;;
+    'userhost>cwd' ) prefix=':' ;;
     *'>end'        ) prefix=' '; suffix=' ' ;;
+    *              ) prefix=' ' ;;
   esac
 
-  echo -n "${prefix}$(__prmpt_color fg $(__prmpt_color_item "$item") +bold commit)"
+  echo -n "${prefix}$(__prmpt_color fg "$color" +bold commit)"
   echo -n "${value}$(__prmpt_color reset commit)${suffix}"
 }
 
 function __prmpt_style_bracket() {
   local item="$1"
   local value="$2"
+  local color="$3"
 
   if [[ $item == end ]]; then
-    __prmpt_color fg $(__prmpt_color_item "$item")
-    echo -n " $2 "
+    __prmpt_color fg "$color"
+    echo -n " $value "
     __prmpt_color reset
   else
-    echo -n "[$(__prmpt_color fg $(__prmpt_color_item "$item") +bold commit)"
-    echo -n "$2$(__prmpt_color reset commit)]"
+    echo -n "[$(__prmpt_color fg "$color" +bold commit)"
+    echo -n "$value$(__prmpt_color reset commit)]"
   fi
 }
 
 function __prmpt_style_stripe() {
   local item="$1"
   local value="$2"
+  local color="$3"
 
   if $__PRMPT_OPT_powerline; then
-    __prmpt_style_stripe_arrow "$item"
+    __prmpt_style_stripe_arrow "$item" "$color"
   fi
 
-  __prmpt_color reset fg $(__prmpt_color_item "$item") bg black +standout
+  __prmpt_color reset fg "$color" bg black +standout >&2
 
   if [[ $item == end ]]; then
     __prmpt_color reset commit
@@ -113,13 +172,14 @@ function __prmpt_style_stripe() {
 
 function __prmpt_style_stripe_arrow() {
   local item="$1"
+  local color="$2"
   local arrow="\xee\x82\xb0"
 
   if [[ -n $__PRMPT_VAR_last_item ]]; then
-    __prmpt_color reset fg $(__prmpt_color_item "$__PRMPT_VAR_last_item")
+    __prmpt_color reset fg "$__PRMPT_VAR_last_color"
 
     if [[ $item != end ]]; then
-      __prmpt_color bg $(__prmpt_color_item "$item")
+      __prmpt_color bg "$color" "$item"
     else
       __prmpt_color bg black
     fi
