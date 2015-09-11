@@ -1,86 +1,86 @@
 #!/bin/bash
 
-__PRMPT_ITEMS="${__PRMPT_ITEMS:-userhost cwd vcs}"
+PRMPT_ITEMS="${PRMPT_ITEMS:-userhost cwd vcs}"
 
-__PRMPT_OPT_color="${__PRMPT_OPT_color:-true}"
-__PRMPT_OPT_color_user="${__PRMPT_OPT_color_user:-green}"
-__PRMPT_OPT_color_host="${__PRMPT_OPT_color_host:-green}"
-__PRMPT_OPT_color_userhost="${__PRMPT_OPT_color_userhost:-green}"
-__PRMPT_OPT_color_cwd="${__PRMPT_OPT_color_cwd:-blue}"
-__PRMPT_OPT_color_end="${__PRMPT_OPT_color_cwd:-green}"
-__PRMPT_OPT_style="${__PRMPT_OPT_style:-simple}"
-__PRMPT_OPT_powerline="${__PRMPT_OPT_powerline:-true}"
+PRMPT_OPT_color="${PRMPT_OPT_color:-true}"
+PRMPT_OPT_color_user="${PRMPT_OPT_color_user:-green}"
+PRMPT_OPT_color_host="${PRMPT_OPT_color_host:-green}"
+PRMPT_OPT_color_userhost="${PRMPT_OPT_color_userhost:-green}"
+PRMPT_OPT_color_cwd="${PRMPT_OPT_color_cwd:-blue}"
+PRMPT_OPT_color_end="${PRMPT_OPT_color_cwd:-green}"
+PRMPT_OPT_style="${PRMPT_OPT_style:-simple}"
+PRMPT_OPT_powerline="${PRMPT_OPT_powerline:-true}"
 
-__PRMPT_OPT_end=${__PRMPT_OPT_end:-'$'}
+PRMPT_OPT_end=${PRMPT_OPT_end:-'$'}
 
 function prmpt() {
   local cmd="$1"; shift
 
   case "$cmd" in
-    set) __prmpt_command_set "$@" ;;
-    '') PROMPT_COMMAND='__prmpt_entry' ;;
+    set) prmpt_command_set "$@" ;;
+    '') PROMPT_COMMAND='prmpt_entry' ;;
   esac
 }
 
-function __prmpt_entry() {
+function prmpt_entry() {
   local item
   local text
   local color
 
-  __prmpt_reset
-  __PRMPT_VAR_last_item=''
-  __PRMPT_VAR_last_color=''
+  prmpt_reset
+  PRMPT_VAR_last_item=''
+  PRMPT_VAR_last_color=''
 
-  for item in $__PRMPT_ITEMS; do
+  for item in $PRMPT_ITEMS; do
     text=
     color=
-    eval "$(__prmpt_item "$item")"
+    eval "$(prmpt_item "$item")"
 
     if [[ -z $color ]]; then
-      color="$(__prmpt_color_item "$item")"
+      color="$(prmpt_color_item "$item")"
     fi
 
     if [[ -n $text ]]; then
-      __prmpt_append "$(__prmpt_style "$item" "$text" "$color")"
-      __PRMPT_VAR_last_item="$item"
-      __PRMPT_VAR_last_color="$color"
+      prmpt_append "$(prmpt_style "$item" "$text" "$color")"
+      PRMPT_VAR_last_item="$item"
+      PRMPT_VAR_last_color="$color"
     fi
   done
 
-  __prmpt_append "$(__prmpt_style end "$__PRMPT_OPT_end")"
-  unset __PRMPT_VAR_last_item
+  prmpt_append "$(prmpt_style end "$PRMPT_OPT_end")"
+  unset PRMPT_VAR_last_item
 }
 
-function __prmpt_reset() {
+function prmpt_reset() {
   PS1=''
 }
 
-function __prmpt_append() {
+function prmpt_append() {
   PS1="$PS1""$@"
 }
 
-function __prmpt_item() {
+function prmpt_item() {
   case "$1" in
     user    ) echo -n "text='\u'" ;;
     host    ) echo -n "text='\h'" ;;
     userhost) echo -n "text='\u@\h'" ;;
     cwd     ) echo -n "text='\w'" ;;
-    vcs     ) __prmpt_vcs_status_valid && echo "$(__prmpt_vcs_status)" ;;
+    vcs     ) prmpt_vcs_status_valid && echo "$(prmpt_vcs_status)" ;;
   esac
 }
 
-function __prmpt_vcs_status_valid() {
-  __prmpt_vcs_is_git_directory && return 0
+function prmpt_vcs_status_valid() {
+  prmpt_vcs_is_git_directory && return 0
   return 1
 }
 
-function __prmpt_vcs_status() {
-  if __prmpt_vcs_is_git_directory; then
-    echo $(__prmpt_vcs_git status)
+function prmpt_vcs_status() {
+  if prmpt_vcs_is_git_directory; then
+    echo $(prmpt_vcs_git status)
   fi
 }
 
-function __prmpt_vcs_is_git_directory() {
+function prmpt_vcs_is_git_directory() {
   local dir="$1"
 
   dir="$(cd "$dir"; pwd)"
@@ -90,14 +90,14 @@ function __prmpt_vcs_is_git_directory() {
   fi
 
   if [[ $dir != / ]]; then
-    __prmpt_vcs_is_git_directory "$(dirname "$dir")"
+    prmpt_vcs_is_git_directory "$(dirname "$dir")"
     return $?
   fi
 
   return 1
 }
 
-function __prmpt_vcs_git() {
+function prmpt_vcs_git() {
   local type="$1"
 
   case "$type" in
@@ -111,18 +111,18 @@ function __prmpt_vcs_git() {
   fi
 }
 
-function __prmpt_style() {
-  "__prmpt_style_${__PRMPT_OPT_style}" "$@"
+function prmpt_style() {
+  "prmpt_style_${PRMPT_OPT_style}" "$@"
 }
 
-function __prmpt_style_simple() {
+function prmpt_style_simple() {
   local item="$1"
   local value="$2"
   local color="$3"
   local prefix=''
   local suffix=''
 
-  case "$__PRMPT_VAR_last_item>$item" in
+  case "$PRMPT_VAR_last_item>$item" in
     'user>host'    ) prefix='@' ;;
     'host>user'    ) prefix='/' ;;
     'host>cwd'     ) prefix=':' ;;
@@ -132,99 +132,99 @@ function __prmpt_style_simple() {
     *              ) prefix=' ' ;;
   esac
 
-  echo -n "${prefix}$(__prmpt_color fg "$color" +bold commit)"
-  echo -n "${value}$(__prmpt_color reset commit)${suffix}"
+  echo -n "${prefix}$(prmpt_color fg "$color" +bold commit)"
+  echo -n "${value}$(prmpt_color reset commit)${suffix}"
 }
 
-function __prmpt_style_bracket() {
+function prmpt_style_bracket() {
   local item="$1"
   local value="$2"
   local color="$3"
 
   if [[ $item == end ]]; then
-    __prmpt_color fg "$color"
+    prmpt_color fg "$color"
     echo -n " $value "
-    __prmpt_color reset
+    prmpt_color reset
   else
-    echo -n "[$(__prmpt_color fg "$color" +bold commit)"
-    echo -n "$value$(__prmpt_color reset commit)]"
+    echo -n "[$(prmpt_color fg "$color" +bold commit)"
+    echo -n "$value$(prmpt_color reset commit)]"
   fi
 }
 
-function __prmpt_style_stripe() {
+function prmpt_style_stripe() {
   local item="$1"
   local value="$2"
   local color="$3"
 
-  if $__PRMPT_OPT_powerline; then
-    __prmpt_style_stripe_arrow "$item" "$color"
+  if $PRMPT_OPT_powerline; then
+    prmpt_style_stripe_arrow "$item" "$color"
   fi
 
-  __prmpt_color reset fg "$color" bg black +standout >&2
+  prmpt_color reset fg "$color" bg black +standout >&2
 
   if [[ $item == end ]]; then
-    __prmpt_color reset commit
+    prmpt_color reset commit
     echo -n ' '
   else
-    __prmpt_color commit
+    prmpt_color commit
     echo -n " $2 "
   fi
 }
 
-function __prmpt_style_stripe_arrow() {
+function prmpt_style_stripe_arrow() {
   local item="$1"
   local color="$2"
   local arrow="\xee\x82\xb0"
 
-  if [[ -n $__PRMPT_VAR_last_item ]]; then
-    __prmpt_color reset fg "$__PRMPT_VAR_last_color"
+  if [[ -n $PRMPT_VAR_last_item ]]; then
+    prmpt_color reset fg "$PRMPT_VAR_last_color"
 
     if [[ $item != end ]]; then
-      __prmpt_color bg "$color" "$item"
+      prmpt_color bg "$color" "$item"
     else
-      __prmpt_color bg black
+      prmpt_color bg black
     fi
 
-    __prmpt_color -standout commit
+    prmpt_color -standout commit
     echo -ne "${arrow}"
   fi
 }
 
-function __prmpt_color_item() {
+function prmpt_color_item() {
   local item="$1"
-  local var_name="__PRMPT_OPT_color_$item"
+  local var_name="PRMPT_OPT_color_$item"
 
   echo "${!var_name}"
 }
 
-function __prmpt_color() {
+function prmpt_color() {
   while [[ $# -gt 0 ]]; do
     case "$1" in
-      +bold) __prmpt_setopt __PRMPT_COLOR +bold ;;
-      -bold) __prmpt_setopt __PRMPT_COLOR -bold ;;
-      +standout) __prmpt_setopt __PRMPT_COLOR +standout ;;
-      -standout) __prmpt_setopt __PRMPT_COLOR -standout ;;
+      +bold) prmpt_setopt PRMPT_COLOR +bold ;;
+      -bold) prmpt_setopt PRMPT_COLOR -bold ;;
+      +standout) prmpt_setopt PRMPT_COLOR +standout ;;
+      -standout) prmpt_setopt PRMPT_COLOR -standout ;;
       fg)
         shift
-        __PRMPT_COLOR_fg="$(__prmpt_color_code "$1")"
+        PRMPT_COLOR_fg="$(prmpt_color_code "$1")"
         ;;
       bg)
         shift
-        __PRMPT_COLOR_bg="$(__prmpt_color_code "$1")"
+        PRMPT_COLOR_bg="$(prmpt_color_code "$1")"
         ;;
       reset)
-        __PRMPT_COLOR_fg=
-        __PRMPT_COLOR_bg=
-        __PRMPT_COLOR_bold=false
-        __PRMPT_COLOR_standout=false
+        PRMPT_COLOR_fg=
+        PRMPT_COLOR_bg=
+        PRMPT_COLOR_bold=false
+        PRMPT_COLOR_standout=false
         ;;
       commit)
         echo -ne "\["
         tput sgr0
-        [[ $__PRMPT_COLOR_fg ]] && tput setaf "${__PRMPT_COLOR_fg}"
-        [[ $__PRMPT_COLOR_bg ]] && tput setab "${__PRMPT_COLOR_bg}"
-        ${__PRMPT_COLOR_bold:-false} && tput bold
-        ${__PRMPT_COLOR_standout:-false} && tput smso
+        [[ $PRMPT_COLOR_fg ]] && tput setaf "${PRMPT_COLOR_fg}"
+        [[ $PRMPT_COLOR_bg ]] && tput setab "${PRMPT_COLOR_bg}"
+        ${PRMPT_COLOR_bold:-false} && tput bold
+        ${PRMPT_COLOR_standout:-false} && tput smso
         echo -ne "\]"
         ;;
     esac
@@ -233,14 +233,14 @@ function __prmpt_color() {
   done
 }
 
-function __prmpt_command_set() {
+function prmpt_command_set() {
   while [[ $# -gt 0 ]]; do
-    __prmpt_setopt __PRMPT_OPT "$1"
+    prmpt_setopt PRMPT_OPT "$1"
     shift
   done
 }
 
-function __prmpt_setopt() {
+function prmpt_setopt() {
   local prefix="$1"
   local def="$2"
   local var_name
@@ -257,7 +257,7 @@ function __prmpt_setopt() {
   eval "${prefix}_${var_name}='$var_value'"
 }
 
-function __prmpt_color_code() {
+function prmpt_color_code() {
   case "$1" in
     black  ) echo ;;
     red    ) echo 1 ;;
