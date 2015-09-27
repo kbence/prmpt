@@ -128,6 +128,7 @@ function prmpt_style_simple() {
     'host>cwd'     ) prefix=':' ;;
     'userhost>cwd' ) prefix=':' ;;
     *'>end'        ) prefix=' '; suffix=' ' ;;
+    *'>vcs'        ) prefix=' ('; suffix=')' ;;
     '>'*           ) ;;
     *              ) prefix=' ' ;;
   esac
